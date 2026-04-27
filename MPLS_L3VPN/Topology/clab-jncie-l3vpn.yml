@@ -1,0 +1,236 @@
+name: junos-l3vpn-hub-spoke
+
+topology:
+  nodes:
+    mx1:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/clab-jncie-l3vpn/clab-junos-l3vpn-hub-spoke/mx1/config/MX1.conf
+      enforce-startup-config: true
+
+    mx2:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/clab-jncie-l3vpn/clab-junos-l3vpn-hub-spoke/mx2/config/MX2.conf
+      enforce-startup-config: true
+
+    mx3:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/clab-jncie-l3vpn/clab-junos-l3vpn-hub-spoke/mx3/config/MX3.conf
+      enforce-startup-config: true
+
+    rr:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/clab-jncie-l3vpn/clab-junos-l3vpn-hub-spoke/rr/config/RR.conf
+      enforce-startup-config: true
+
+    cpe-hub:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/clab-jncie-l3vpn/clab-junos-l3vpn-hub-spoke/cpe-hub/config/CPE-HUB.conf
+      enforce-startup-config: true
+
+    cpe-2:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/clab-jncie-l3vpn/clab-junos-l3vpn-hub-spoke/cpe-2/config/CPE-2.conf
+      enforce-startup-config: true
+
+    cpe-3:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/clab-jncie-l3vpn/clab-junos-l3vpn-hub-spoke/cpe-3/config/CPE-3.conf
+      enforce-startup-config: true
+
+
+
+    # DEB1 host
+    DEB1:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 ethtool net-tools vlan"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        # VRF + VLAN 10
+        - bash -lc "ip link add vrf10 type vrf table 10"
+        - bash -lc "ip link set vrf10 up"
+        - bash -lc "ip link add link eth1 name eth1.10 type vlan id 10"
+        - bash -lc "ip link set eth1.10 master vrf10"
+        - bash -lc "ip link set eth1.10 up"
+        - bash -lc "ip addr add 172.1.10.10/24 dev eth1.10"
+        - bash -lc "ip route add default via 172.1.10.1 dev eth1.10 vrf vrf10"
+        # VRF + VLAN 20
+        - bash -lc "ip link add vrf20 type vrf table 20"
+        - bash -lc "ip link set vrf20 up"
+        - bash -lc "ip link add link eth1 name eth1.20 type vlan id 20"
+        - bash -lc "ip link set eth1.20 master vrf20"
+        - bash -lc "ip link set eth1.20 up"
+        - bash -lc "ip addr add 172.1.20.10/24 dev eth1.20"
+        - bash -lc "ip route add default via 172.1.20.1 dev eth1.20 vrf vrf20"
+        # VRF + VLAN 30
+        - bash -lc "ip link add vrf30 type vrf table 30"
+        - bash -lc "ip link set vrf30 up"
+        - bash -lc "ip link add link eth1 name eth1.30 type vlan id 30"
+        - bash -lc "ip link set eth1.30 master vrf30"
+        - bash -lc "ip link set eth1.30 up"
+        - bash -lc "ip addr add 172.1.30.10/24 dev eth1.30"
+        - bash -lc "ip route add default via 172.1.30.1 dev eth1.30 vrf vrf30"
+
+    # DEB2 host
+    DEB2:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 ethtool net-tools vlan"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        # VRF + VLAN 10
+        - bash -lc "ip link add vrf10 type vrf table 10"
+        - bash -lc "ip link set vrf10 up"
+        - bash -lc "ip link add link eth1 name eth1.10 type vlan id 10"
+        - bash -lc "ip link set eth1.10 master vrf10"
+        - bash -lc "ip link set eth1.10 up"
+        - bash -lc "ip addr add 172.2.10.10/24 dev eth1.10"
+        - bash -lc "ip route add default via 172.2.10.1 dev eth1.10 vrf vrf10"
+        # VRF + VLAN 20
+        - bash -lc "ip link add vrf20 type vrf table 20"
+        - bash -lc "ip link set vrf20 up"
+        - bash -lc "ip link add link eth1 name eth1.20 type vlan id 20"
+        - bash -lc "ip link set eth1.20 master vrf20"
+        - bash -lc "ip link set eth1.20 up"
+        - bash -lc "ip addr add 172.2.20.10/24 dev eth1.20"
+        - bash -lc "ip route add default via 172.2.20.1 dev eth1.20 vrf vrf20"
+        # VRF + VLAN 30
+        - bash -lc "ip link add vrf30 type vrf table 30"
+        - bash -lc "ip link set vrf30 up"
+        - bash -lc "ip link add link eth1 name eth1.30 type vlan id 30"
+        - bash -lc "ip link set eth1.30 master vrf30"
+        - bash -lc "ip link set eth1.30 up"
+        - bash -lc "ip addr add 172.2.30.10/24 dev eth1.30"
+        - bash -lc "ip route add default via 172.2.30.1 dev eth1.30 vrf vrf30"
+        # VRF + VLAN 40
+        - bash -lc "ip link add vrf40 type vrf table 40"
+        - bash -lc "ip link set vrf40 up"
+        - bash -lc "ip link add link eth1 name eth1.40 type vlan id 40"
+        - bash -lc "ip link set eth1.40 master vrf40"
+        - bash -lc "ip link set eth1.40 up"
+        - bash -lc "ip addr add 172.2.40.10/24 dev eth1.40"
+        - bash -lc "ip route add default via 172.2.40.1 dev eth1.40 vrf vrf40"
+        # VRF + VLAN 50
+        - bash -lc "ip link add vrf50 type vrf table 50"
+        - bash -lc "ip link set vrf50 up"
+        - bash -lc "ip link add link eth1 name eth1.50 type vlan id 50"
+        - bash -lc "ip link set eth1.50 master vrf50"
+        - bash -lc "ip link set eth1.50 up"
+        - bash -lc "ip addr add 172.2.50.10/24 dev eth1.50"
+        - bash -lc "ip route add default via 172.2.50.1 dev eth1.50 vrf vrf50"
+        # VRF + VLAN 60
+        - bash -lc "ip link add vrf60 type vrf table 60"
+        - bash -lc "ip link set vrf60 up"
+        - bash -lc "ip link add link eth1 name eth1.60 type vlan id 60"
+        - bash -lc "ip link set eth1.60 master vrf60"
+        - bash -lc "ip link set eth1.60 up"
+        - bash -lc "ip addr add 172.2.60.10/24 dev eth1.60"
+        - bash -lc "ip route add default via 172.2.60.1 dev eth1.60 vrf vrf60"
+
+
+    # DEB3 host
+    DEB3:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 ethtool net-tools vlan"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        # VRF + VLAN 10
+        - bash -lc "ip link add vrf10 type vrf table 10"
+        - bash -lc "ip link set vrf10 up"
+        - bash -lc "ip link add link eth1 name eth1.10 type vlan id 10"
+        - bash -lc "ip link set eth1.10 master vrf10"
+        - bash -lc "ip link set eth1.10 up"
+        - bash -lc "ip addr add 172.3.10.10/24 dev eth1.10"
+        - bash -lc "ip route add default via 172.3.10.1 dev eth1.10 vrf vrf10"
+        # VRF + VLAN 20
+        - bash -lc "ip link add vrf20 type vrf table 20"
+        - bash -lc "ip link set vrf20 up"
+        - bash -lc "ip link add link eth1 name eth1.20 type vlan id 20"
+        - bash -lc "ip link set eth1.20 master vrf20"
+        - bash -lc "ip link set eth1.20 up"
+        - bash -lc "ip addr add 172.3.20.10/24 dev eth1.20"
+        - bash -lc "ip route add default via 172.3.20.1 dev eth1.20 vrf vrf20"
+        # VRF + VLAN 30
+        - bash -lc "ip link add vrf30 type vrf table 30"
+        - bash -lc "ip link set vrf30 up"
+        - bash -lc "ip link add link eth1 name eth1.30 type vlan id 30"
+        - bash -lc "ip link set eth1.30 master vrf30"
+        - bash -lc "ip link set eth1.30 up"
+        - bash -lc "ip addr add 172.3.30.10/24 dev eth1.30"
+        - bash -lc "ip route add default via 172.3.30.1 dev eth1.30 vrf vrf30"
+        # VRF + VLAN 40
+        - bash -lc "ip link add vrf40 type vrf table 40"
+        - bash -lc "ip link set vrf40 up"
+        - bash -lc "ip link add link eth1 name eth1.40 type vlan id 40"
+        - bash -lc "ip link set eth1.40 master vrf40"
+        - bash -lc "ip link set eth1.40 up"
+        - bash -lc "ip addr add 172.3.40.10/24 dev eth1.40"
+        - bash -lc "ip route add default via 172.3.40.1 dev eth1.40 vrf vrf40"
+        # VRF + VLAN 50
+        - bash -lc "ip link add vrf50 type vrf table 50"
+        - bash -lc "ip link set vrf50 up"
+        - bash -lc "ip link add link eth1 name eth1.50 type vlan id 50"
+        - bash -lc "ip link set eth1.50 master vrf50"
+        - bash -lc "ip link set eth1.50 up"
+        - bash -lc "ip addr add 172.3.50.10/24 dev eth1.50"
+        - bash -lc "ip route add default via 172.3.50.1 dev eth1.50 vrf vrf50"
+        # VRF + VLAN 60
+        - bash -lc "ip link add vrf60 type vrf table 60"
+        - bash -lc "ip link set vrf60 up"
+        - bash -lc "ip link add link eth1 name eth1.60 type vlan id 60"
+        - bash -lc "ip link set eth1.60 master vrf60"
+        - bash -lc "ip link set eth1.60 up"
+        - bash -lc "ip addr add 172.3.60.10/24 dev eth1.60"
+        - bash -lc "ip route add default via 172.3.60.1 dev eth1.60 vrf vrf60"
+
+
+    # INET_HOST
+    INET_HOST:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 ethtool net-tools vlan"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        - bash -lc "ip addr add 8.8.8.8/24 dev eth1"
+        - bash -lc "ip route replace default via 8.8.8.1 dev eth1"
+
+
+  links:
+    # MX1
+    - endpoints: ["mx1:eth1", "mx2:eth1"]
+    - endpoints: ["mx1:eth2", "mx3:eth1"]
+    - endpoints: ["mx1:eth3", "rr:eth1"]
+    - endpoints: ["mx1:eth4", "cpe-hub:eth1"]
+    - endpoints: ["mx1:eth5", "cpe-hub:eth2"]
+    # MX2
+    - endpoints: ["mx2:eth2", "mx3:eth2"]
+    - endpoints: ["mx2:eth3", "cpe-2:eth1"]
+    # MX3
+    - endpoints: ["mx3:eth3", "cpe-3:eth1"]
+    # CPE HUB
+    - endpoints: ["cpe-hub:eth3", "DEB1:eth1"]
+    - endpoints: ["cpe-hub:eth4", "INET_HOST:eth1"]
+    # CPE 2
+    - endpoints: ["cpe-2:eth2", "DEB2:eth1"]
+    # CPE 3
+    - endpoints: ["cpe-3:eth2", "DEB3:eth1"]  
