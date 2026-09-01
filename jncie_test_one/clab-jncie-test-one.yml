@@ -5,44 +5,44 @@ topology:
     pe1:
       kind: juniper_vjunosrouter
       image: vrnetlab/juniper_vjunos-router:25.4R1.12
-      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/pe1/config/PE1.conf
+      startup-config: {current_pwd}/jncie_test_one/clab-clab-jncie-test-one/pe1/config/PE1.conf
       enforce-startup-config: true
 
     pe2:
       kind: juniper_vjunosrouter
       image: vrnetlab/juniper_vjunos-router:25.4R1.12
-      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/pe2/config/PE2.conf
+      startup-config: {current_pwd}/jncie_test_one/clab-clab-jncie-test-one/pe2/config/PE2.conf
       enforce-startup-config: true
 
     pe36:
       kind: juniper_vjunosrouter
       image: vrnetlab/juniper_vjunos-router:25.4R1.12
-      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/pe36/config/PE36.conf
+      startup-config: {current_pwd}/jncie_test_one/clab-clab-jncie-test-one/pe36/config/PE36.conf
       enforce-startup-config: true
 
 
     p45:
       kind: juniper_vjunosrouter
       image: vrnetlab/juniper_vjunos-router:25.4R1.12
-      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/p45/config/P45.conf
+      startup-config: {current_pwd}/jncie_test_one/clab-clab-jncie-test-one/p45/config/P45.conf
       enforce-startup-config: true
 
     pe7_rr:
       kind: juniper_vjunosrouter
       image: vrnetlab/juniper_vjunos-router:25.4R1.12
-      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/pe7_rr/config/PE7_RR.conf
+      startup-config: {current_pwd}/jncie_test_one/clab-clab-jncie-test-one/pe7_rr/config/PE7_RR.conf
       enforce-startup-config: true
 
     vr1:
       kind: juniper_vjunosrouter
       image: vrnetlab/juniper_vjunos-router:25.4R1.12
-      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/vr1/config/VR1.conf
+      startup-config: {current_pwd}/jncie_test_one/clab-clab-jncie-test-one/vr1/config/VR1.conf
       enforce-startup-config: true
 
     vr2:
       kind: juniper_vjunosrouter
       image: vrnetlab/juniper_vjunos-router:25.4R1.12
-      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/vr2/config/VR2.conf
+      startup-config: {current_pwd}/jncie_test_one/clab-clab-jncie-test-one/vr2/config/VR2.conf
       enforce-startup-config: true
 
 
