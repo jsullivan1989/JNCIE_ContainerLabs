@@ -1,0 +1,42 @@
+# gnmic.yaml - starter config for IH1 acting as a gNMI/gRPC telemetry
+# collector, subscribing to telemetry sensors on your PE routers.
+#
+# This assumes IH1 dials OUT to each PE's gRPC/gNMI service (the PE
+# is the gRPC server; gnmic is the client). Junos needs:
+#   set system services extension-service request-response grpc
+#     clear-text port <port>
+# (or ssl, depending on what the task calls for) on each target PE.
+#
+# Usage once running:
+#   gnmic --config /etc/gnmic/gnmic.yaml subscribe
+#   gnmic --config /etc/gnmic/gnmic.yaml capabilities -a <PE-loopback>:<port>
+#   gnmic --config /etc/gnmic/gnmic.yaml get -a <PE-loopback>:<port> --path /interfaces
+
+username: admin
+password: admin@123   # match the PE's configured gRPC/NETCONF creds
+skip-verify: true              # accept self-signed certs; fine for lab use
+timeout: 10s
+encoding: json_ietf
+
+# Add one entry per PE you want to poll. Replace with your real
+# loopbacks and whatever gRPC port you configure under
+# "system services extension-service" on each PE (default is often
+# 32767 or a port you explicitly assign).
+targets:
+  pe1:
+    address: 192.168.1.1:54321
+
+
+# Example subscription -- interface statistics, polled every 10s.
+# Add more paths/subscriptions as you practice different sensors
+# (BGP state, routing-engine stats, etc).
+subscriptions:
+  interfaces-sub:
+    paths:
+      - /interfaces/interface/state/counters
+    mode: stream
+    stream-mode: sample
+    sample-interval: 10s
+
+# Ties the subscription above to all defined targets by default.
+# You can also scope specific subscriptions per-target if needed.
