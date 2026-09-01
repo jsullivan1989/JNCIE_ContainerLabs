@@ -1,0 +1,298 @@
+name: clab-jncie-test-one
+
+topology:
+  nodes:
+    pe1:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/pe1/config/PE1.conf
+      enforce-startup-config: true
+
+    pe2:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/pe2/config/PE2.conf
+      enforce-startup-config: true
+
+    pe36:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/pe36/config/PE36.conf
+      enforce-startup-config: true
+
+
+    p45:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/p45/config/P45.conf
+      enforce-startup-config: true
+
+    pe7_rr:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/pe7_rr/config/PE7_RR.conf
+      enforce-startup-config: true
+
+    vr1:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/vr1/config/VR1.conf
+      enforce-startup-config: true
+
+    vr2:
+      kind: juniper_vjunosrouter
+      image: vrnetlab/juniper_vjunos-router:25.4R1.12
+      startup-config: /home/jsullivan/clab-quickstart/jncie_test_one/clab-clab-jncie-test-one/vr2/config/VR2.conf
+      enforce-startup-config: true
+
+
+# Global ASN of 999 for the core PEs that we are focusing on
+# Massive logical-system stitchd config of a JNCIE mock lab on steroids...several ASNs simulated including multiple examples of all 
+# JNCIE topics
+  
+
+
+# PE1/PE8 are same device
+# PE2/PE9 are same device
+# P4/P5 are same device
+# RR1/RR2/PE7 are same
+# PE3/PE6 are same devices
+# VR1 will cover U3, CE7, CE3, CE2, CE9, CE6, Customer1
+# VR2 will cover CE5, CE11, U2, CE10, U1, CE8, Customer2
+
+
+# CBGP PE1 <--> PE7 and RRs are in 65001
+# CBGP PE8, PE9 are in 65002
+# U1/U2/U3 are providers
+# U1 (ASN 23.89) and U3 (7311) are both IPv4 and IPv6
+# U2 (ASN 701) is IPv4/IPv6
+# Both U1 and U3 will have a single IPv4 BGP session running both v4/v6 BGP families
+
+# Customers 1 (65101) and 2 (65102) are dual stack v4/v6 (no Layer 3 VPN) - C1 to PE3 will have one IPv4 session with 
+# v4 and v6 BGP families while C2 to PE7 will have two separate v4 and v6 sessions.  
+# CE9/CE11 are EVPN (tagged/untragged)
+# CE3/CE8 are VPLS customers
+# CE5 is Hub while CE6/CE7 are spokes (ASN 65513) - NT
+# CE2 (OSPF) and CE10 (BGP) are Customer L3VPNs (ASN 65100) - Digital Ocean
+# PE1 and PE7 are LDP Islands while everywhere else is RSVP and SR
+# RR1 and RR2 are redundant route reflectors for all of 65001
+# Lots of system services SNMPv3, sampling, scripting, whitelisting, certificates, etc
+
+
+
+    # VPLS Host 1 connected to CE3 and PE1
+    VH1:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 iperf ethtool net-tools vlan smcroute"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        - bash -lc "ip link set eth1 up"
+        - bash -lc "ip addr add 192.168.10.10/24 dev eth1"
+        - bash -lc "ip route replace default via 192.168.10.1 dev eth1"
+
+    # VPLS Host 2 connected to CE8 and PE9
+    VH2:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 iperf ethtool net-tools vlan smcroute"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        - bash -lc "ip link set eth1 up"
+        - bash -lc "ip addr add 192.168.10.20/24 dev eth1"
+        - bash -lc "ip route replace default via 192.168.10.1 dev eth1"
+
+    # EVPN Host 1 connected to CE9 (VR1) and then PE3/PE7 - Also an L3 Host and Multicast Source for NT-HUB
+    E_Spoke_1:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 iperf ethtool net-tools vlan smcroute"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        # VRF + VLAN 10
+        - bash -lc "ip link add vrf10 type vrf table 10"
+        - bash -lc "ip link set vrf10 up"
+        - bash -lc "ip link add link eth1 name eth1.10 type vlan id 10"
+        - bash -lc "ip link set eth1.10 master vrf10"
+        - bash -lc "ip link set eth1.10 up"
+        - bash -lc "ip addr add 192.199.10.10/24 dev eth1.10"
+        - bash -lc "ip route add default via 192.199.10.1 dev eth1.10 vrf vrf10"
+        # VRF + VLAN 20
+        - bash -lc "ip link add vrf20 type vrf table 20"
+        - bash -lc "ip link set vrf20 up"
+        - bash -lc "ip link add link eth1 name eth1.20 type vlan id 20"
+        - bash -lc "ip link set eth1.20 master vrf20"
+        - bash -lc "ip link set eth1.20 up"
+        - bash -lc "ip addr add 192.199.20.10/24 dev eth1.20"
+        - bash -lc "ip route add default via 192.199.20.1 dev eth1.20 vrf vrf20"
+        # VRF + VLAN 30
+        - bash -lc "ip link add vrf30 type vrf table 30"
+        - bash -lc "ip link set vrf30 up"
+        - bash -lc "ip link add link eth1 name eth1.30 type vlan id 30"
+        - bash -lc "ip link set eth1.30 master vrf30"
+        - bash -lc "ip link set eth1.30 up"
+        - bash -lc "ip addr add 192.199.30.10/24 dev eth1.30"
+        - bash -lc "ip route add default via 192.199.30.1 dev eth1.30 vrf vrf30"
+        # VRF + VLAN 66
+        - bash -lc "ip link add vrf66 type vrf table 66"
+        - bash -lc "ip link set vrf66 up"
+        - bash -lc "ip link add link eth1 name eth1.66 type vlan id 66"
+        - bash -lc "ip link set eth1.66 master vrf66"
+        - bash -lc "ip link set eth1.66 up"
+        - bash -lc "ip addr add 10.65.66.10/24 dev eth1.66"
+        - bash -lc "ip route add default via 10.65.66.1 dev eth1.66 vrf vrf66"
+        # VRF + VLAN 67
+        - bash -lc "ip link add vrf67 type vrf table 67"
+        - bash -lc "ip link set vrf67 up"
+        - bash -lc "ip link add link eth1 name eth1.67 type vlan id 67"
+        - bash -lc "ip link set eth1.67 master vrf67"
+        - bash -lc "ip link set eth1.67 up"
+        - bash -lc "ip addr add 10.65.67.10/24 dev eth1.67"
+        - bash -lc "ip route add default via 10.65.67.1 dev eth1.67 vrf vrf67"
+        # VRF + VLAN 100
+        - bash -lc "ip link add vrf100 type vrf table 100"
+        - bash -lc "ip link set vrf100 up"
+        - bash -lc "ip link add link eth1 name eth1.100 type vlan id 100"
+        - bash -lc "ip link set eth1.100 master vrf100"
+        - bash -lc "ip link set eth1.100 up"
+        - bash -lc "ip addr add 192.199.100.10/24 dev eth1.100"
+        - bash -lc "ip route add default via 192.199.100.1 dev eth1.100 vrf vrf100"
+    # EVPN Host 2 connected to CE11 (VR2) and then PE6
+    E_Hub_2:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 iperf ethtool net-tools vlan smcroute"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        - bash -lc "ip link set eth1 up"
+        # VRF + VLAN 10
+        - bash -lc "ip link add vrf10 type vrf table 10"
+        - bash -lc "ip link set vrf10 up"
+        - bash -lc "ip link add link eth1 name eth1.10 type vlan id 10"
+        - bash -lc "ip link set eth1.10 master vrf10"
+        - bash -lc "ip link set eth1.10 up"
+        - bash -lc "ip addr add 192.199.10.20/24 dev eth1.10"
+        - bash -lc "ip route add default via 192.199.10.1 dev eth1.10 vrf vrf10"
+        # VRF + VLAN 20
+        - bash -lc "ip link add vrf20 type vrf table 20"
+        - bash -lc "ip link set vrf20 up"
+        - bash -lc "ip link add link eth1 name eth1.20 type vlan id 20"
+        - bash -lc "ip link set eth1.20 master vrf20"
+        - bash -lc "ip link set eth1.20 up"
+        - bash -lc "ip addr add 192.199.20.20/24 dev eth1.20"
+        - bash -lc "ip route add default via 192.199.20.1 dev eth1.20 vrf vrf20"
+        # VRF + VLAN 30
+        - bash -lc "ip link add vrf30 type vrf table 30"
+        - bash -lc "ip link set vrf30 up"
+        - bash -lc "ip link add link eth1 name eth1.30 type vlan id 30"
+        - bash -lc "ip link set eth1.30 master vrf30"
+        - bash -lc "ip link set eth1.30 up"
+        - bash -lc "ip addr add 192.199.30.20/24 dev eth1.30"
+        - bash -lc "ip route add default via 192.199.30.1 dev eth1.30 vrf vrf30"
+        # VRF + VLAN 65
+        - bash -lc "ip link add vrf65 type vrf table 65"
+        - bash -lc "ip link set vrf65 up"
+        - bash -lc "ip link add link eth1 name eth1.65 type vlan id 65"
+        - bash -lc "ip link set eth1.65 master vrf65"
+        - bash -lc "ip link set eth1.65 up"
+        - bash -lc "ip addr add 10.65.65.10/24 dev eth1.65"
+        - bash -lc "ip route add default via 10.65.65.1 dev eth1.65 vrf vrf65"
+        # VRF + VLAN 100
+        - bash -lc "ip link add vrf100 type vrf table 100"
+        - bash -lc "ip link set vrf100 up"
+        - bash -lc "ip link add link eth1 name eth1.100 type vlan id 100"
+        - bash -lc "ip link set eth1.100 master vrf100"
+        - bash -lc "ip link set eth1.100 up"
+        - bash -lc "ip addr add 192.199.100.20/24 dev eth1.100"
+        - bash -lc "ip route add default via 192.199.100.1 dev eth1.100 vrf vrf100"
+
+    # INET Host connected to VR2 and part of U1
+    #### Adding lots of stuff here for system services testing telemtry, flow collector, SNMP,
+    #### NTP, etc.
+    IH1:
+      kind: linux
+      image: ubuntu:22.04
+      exec:
+        - bash -lc "sleep 5"
+        - bash -lc "apt update -y"
+        - bash -lc "apt install -y isc-dhcp-client iproute2 iputils-ping tcpdump nano iperf3 iperf ethtool net-tools vlan smcroute snmp snmpd systemctl chrony nfdump curl"
+        - bash -lc "ip link set eth1 up || true"
+        - bash -lc "modprobe 8021q"
+        - bash -lc "ip link set eth1 up"
+        - bash -lc "ip addr add 8.8.8.8/24 dev eth1"
+        - bash -lc "ip route add 192.168.1.0/28 via 8.8.8.1 dev eth1"
+        - bash -lc "ip route add 10.65.0.0/16 via 8.8.8.1 dev eth1"
+        - bash -lc "ip route add 172.65.0.0/16 via 8.8.8.1 dev eth1"
+        - bash -lc "systemctl enable --now snmpd"
+        - bash -lc "systemctl enable --now chrony"
+        - bash -lc "mkdir -p /var/flows && nohup nfcapd -w -D -l /var/flows -p 2055 &"
+        - bash -lc "curl -sL https://github.com/openconfig/gnmic/releases/download/v0.46.0/gnmic_0.46.0_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin gnmic"  
+      binds:
+        - IH1-configs/chrony.conf:/etc/chrony/chrony.conf
+        - IH1-configs/gnmic.yaml:/etc/gnmic/gnmic.yaml      
+
+
+
+  links:
+    # PE1
+    - endpoints: ["pe1:eth1", "pe2:eth1"] # PE1 to PE2 core link
+    - endpoints: ["pe1:eth2", "p45:eth1"] # PE1 to P4 Core link
+    - endpoints: ["pe1:eth3", "vr1:eth1"] # PE1 to CE3 link
+    - endpoints: ["pe1:eth4", "vr1:eth2"] # PE1 to CE7 link
+    # PE2
+    - endpoints: ["pe2:eth2", "pe36:eth1"] # PE2 to PE6 core link
+    - endpoints: ["pe2:eth3", "vr1:eth3"] # PE2 to U3 link
+    - endpoints: ["pe2:eth4", "vr2:eth1"] # PE2 to CE5 link
+    # PE36 - PE3 side
+    - endpoints: ["pe36:eth2", "p45:eth2"] # PE3 to P4 core link
+    - endpoints: ["pe36:eth3", "vr1:eth4"] # PE3 to CE2 link
+    - endpoints: ["pe36:eth4", "vr1:eth5"] # PE3 to CE9 link over AE10
+    - endpoints: ["pe36:eth5", "vr1:eth6"] # PE3 to Customer1 link
+    # P45
+    - endpoints: ["p45:eth3", "p45:eth4"] # P4 to P5 core link hairpin
+    # PE36 - PE6 side
+    - endpoints: ["pe36:eth6", "pe7_rr:eth1"] # PE3 to PE7 core link
+    - endpoints: ["pe36:eth7", "pe7_rr:eth2"] # PE6 to RR1 core link
+    - endpoints: ["pe36:eth8", "pe7_rr:eth3"] # PE6 to RR2 core link
+    - endpoints: ["pe36:eth9", "vr2:eth2"] # PE6 to CE11 link - EVPN
+    - endpoints: ["pe36:eth10", "pe1:eth5"] # PE6 to PE8 (PE1 LS) core inter-AS link
+    - endpoints: ["pe36:eth11", "p45:eth6"] # PE6 to P4 core link
+    - endpoints: ["pe36:eth12", "pe7_rr:eth10"] # PE6 to PE7 core link
+    # PE7-RR PE7 side
+    - endpoints: ["pe7_rr:eth5", "pe2:eth5"] # PE7 to PE9 (PE2 LS) core inter-AS link
+    - endpoints: ["pe7_rr:eth6", "vr2:eth3"] # PE7 to Customer 2 Link
+    - endpoints: ["pe7_rr:eth7", "vr1:eth7"] # PE7 to CE6 Link
+    - endpoints: ["pe7_rr:eth8", "vr1:eth8"] # PE7 to CE9 link over AE10
+    - endpoints: ["pe7_rr:eth11", "p45:eth5"] # RR2 link to P5
+    # PE8 - PE9 link 
+    - endpoints: ["pe1:eth6", "pe2:eth6"] # PE8 to PE9 core link
+    # PE8 links to CE10 and U2
+    - endpoints: ["pe1:eth7", "vr2:eth4"] # PE8 to U2 Link
+    - endpoints: ["pe1:eth8", "vr2:eth5"] # PE8 to CE10 link
+    # PE9 links to CE8 and U1
+    - endpoints: ["pe2:eth7", "vr2:eth6"] # PE9 to U1 Link
+    - endpoints: ["pe2:eth8", "vr2:eth7"] # PE9 to CE8 link VPLS
+    # Missed PE2 link to RR1
+    - endpoints: ["pe2:eth9", "pe7_rr:eth9"] # PE2 to RR1 core link
+    # Endhosts - VPLS and EVPN
+    - endpoints: ["VH1:eth1", "vr1:eth9"] # VPLS Host 1 to CE3 link
+    - endpoints: ["VH2:eth1", "vr2:eth8"] # VPLS Host 2 to CE8 link
+    - endpoints: ["E_Spoke_1:eth1", "vr1:eth10"] # EVPN Host 1 to CE9 link
+    - endpoints: ["E_Hub_2:eth1", "vr2:eth9"] # EVPN Host 2 to CE11 link
+    - endpoints: ["IH1:eth1", "vr2:eth10"] # INET Host to VR2 as part of U1
+    # Extra OSPF CE interface
+    - endpoints: ["vr1:eth11", "pe7_rr:eth12"] # DIGITAL OCEAN Extra OSPF Link to PE1
+    - endpoints: ["vr2:eth11", "pe1:eth9"] # Link to Cloudflare provider for InterProvider Option B
+    - endpoints: ["vr1:eth12", "pe2:eth10"] # L2VPN link to stitch to VPLS via PE9 as the stitching point, logical-tunnel interface to be used in VR for endpoint
