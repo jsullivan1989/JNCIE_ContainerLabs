@@ -34,6 +34,9 @@ Device configurations are in this repository.
 | tenant1 | 100 | 192.168.100.0/24 |
 | tenant1 | 101 | 192.168.101.0/24 |
 | tenant2 | 102 | 192.168.102.0/24 |
+| tenant2 | 103 | 192.168.103.0/24 |
+| tenant2 | 104 | 192.168.104.0/24 |
+| tenant2 | 105 | 192.168.105.0/24 |
 
 DC1 and DC2 both carry tenant1 and tenant2. VLAN 100 is also stretched between DC2 and DC3 (see [Data center interconnect](#data-center-interconnect)). Each tenant is an IP VRF. Tenants communicate with each other only through a firewall (DC1 and DC2) or through route leaking (DC3), described below.
 
