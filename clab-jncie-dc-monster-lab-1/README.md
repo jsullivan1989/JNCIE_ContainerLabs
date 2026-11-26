@@ -75,3 +75,5 @@ DC3 has no firewall. Inter-tenant traffic is handled with RIB groups and auto-ex
 - **DC1 and DC2.** Tenant traffic hairpins through the local SRX. The border leaf runs a native untagged BGP session in `inet.0` to the SRX, and the WAN is reached from there.
 - **DC3.** Uses selective EVPN host-route leaking from the tenant VRF into `inet.0` to reach the Internet. AS-path filtering and a SPINE-to-LEAF community filter prevent routing loops and traffic tromboning.
 - **WAN.** The vMX is the central hub that all three DCs reach for Internet access.
+
+![](images/FW.png)
